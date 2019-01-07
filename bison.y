@@ -51,6 +51,13 @@
         struct variable* var_2;
     };
 
+    struct precode_block {
+        struct precode_block* previous;
+        struct precode_block* next;
+        vector<struct precode_object*> precode_list;
+        int length;
+    };
+
 
 
 // ========= STRUCT CONSTRUCTOR DECLARATION =============
@@ -82,6 +89,13 @@
         string label,
         struct variable* var_1,
         struct variable* var_2
+    );
+
+    struct precode_block* new_precode_block(
+        struct precode_block* previous,
+        struct precode_block* next,
+        vector<struct precode_object*> precode_list,
+        int length
     );
 
 
@@ -360,6 +374,26 @@ struct precode_object* new_precode_obj(
     code->var_2 = var_2;
 
     return code;
+}
+
+struct precode_block* new_precode_block(
+        struct precode_block* previous,
+        struct precode_block* next,
+        vector<struct precode_object*> precode_list,
+        int length) {
+    struct precode_block* block = (struct precode_block*)malloc(sizeof(struct precode_block));
+    
+    if (!block) {
+        cout << "ERR: block out of space" << endl;
+        yyerror("Err: block out of space\n");
+        exit(1);
+    }
+    block->previous = previous;
+    block->next = next;
+    block->precode_list = precode_list;
+    block->length = length;
+
+    return block;
 }
 
 // struct block* new_block() {
