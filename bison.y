@@ -45,6 +45,12 @@
         int value;
     };
 
+    struct precode_object {
+        string label;
+        struct variable* var_1;
+        struct variable* var_2;
+    };
+
 
 
 // ========= STRUCT CONSTRUCTOR DECLARATION =============
@@ -72,12 +78,18 @@
         int value
     );
 
+    struct precode_object* new_precode_obj(
+        string label,
+        struct variable* var_1,
+        struct variable* var_2
+    );
+
 
 
 // ========= VARIABLE DECLARATION =============
-    map<string, int> variables;
-    map<string, array_object> arrays;
-    string registries[8] = {"A", "B", "C", "D", "E", "F", "G", "H"};
+    map<string, int> variables;                                             // all declared variables
+    map<string, struct array_object*> arrays;                               // all declared arrays
+    string registries[8] = {"A", "B", "C", "D", "E", "F", "G", "H"};        // all available registries
 
 
 // ========= FUNCTION DECLARATION =============
@@ -260,12 +272,12 @@ int main(int argc, char **argv) {
 	// initializeCompilation();
     yyparse();
     // finishCompilation();
-    printf("Kompilacja zakonczona.\n");
+    printf("Compilation finished successfully\n");
 }
 
 void yyerror(char *s) {
 	// finishCompilation();
-	// fprintf(stderr, RED"Błąd [linia %d]:%s %s.\n", lineno, NORMAL, s);
+	fprintf(stderr, "Error:%s.\n", s);
 	exit(1);
 }
 
@@ -324,12 +336,30 @@ struct variable* new_variable(variable_label label,
         yyerror("Err: out of space\n");
         exit(1);
     }
-    var->label;
-    var->id_1;
-    var->id_2;
-    var->value;
+    var->label = label;
+    var->id_1 = id_1;
+    var->id_2 = id_2;
+    var->value = value;
 
     return var;
+}
+
+struct precode_object* new_precode_obj(
+        string label,
+        struct variable* var_1,
+        struct variable* var_2) {
+    struct precode_object* code = (struct precode_object*)malloc(sizeof(struct precode_object));
+    
+    if (!code) {
+        cout << "ERR: code out of space" << endl;
+        yyerror("Err: code out of space\n");
+        exit(1);
+    }
+    code->label = label;
+    code->var_1 = var_1;
+    code->var_2 = var_2;
+
+    return code;
 }
 
 // struct block* new_block() {
