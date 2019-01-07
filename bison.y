@@ -112,7 +112,9 @@
     map<string, struct array_object*> arrays;                               // all declared arrays
     string registries[8] = {"A", "B", "C", "D", "E", "F", "G", "H"};        // all available registries
 
-    int label_iterator = 0;                                                 // global id for labels
+    int label_iterator = 0;      
+    struct precode_block* root_block = new_precode_block(NULL, NULL, 0);
+    struct precode_block* current_block = root_block;                                             // global id for labels
 
 // ========= FUNCTION DECLARATION =============
 
@@ -183,7 +185,6 @@ program:
 
 declarations: 
 	declarations ID';'  	{
-        cout << "declarations ID: " << $2 << endl;
         struct ast* id = newast(string("ID"), NULL, NULL, NULL, NULL, $2, 0);
         $$ = newast("DECLARATIONS", $1, id, NULL, NULL, "DECVAR", 0);
     }
@@ -455,12 +456,12 @@ void handle_program(struct ast* root) {
     struct precode_block* block = create_commands(root->s_2);
     cout << "handle program" << endl;
 
-    while (block->length > 0) {
-        cout << endl << "=== block ===" << endl;
+    while (NULL != block) {
+        cout << "=== block ===" << endl;
         for (int i = 0; i < block->precode_list.size(); i++) {
             print_precode_obj(block->precode_list[i]);
         }
-        block = block->previous;
+        block = block->next;
     }
 
 }
@@ -486,7 +487,24 @@ struct precode_block* create_ifelse(struct ast* node) {
 }
 
 struct precode_block* create_if(struct ast* node) {
-    return NULL;
+    struct variable* label = get_new_label();
+    vector<struct precode_object*> cond = create_condition(node->s_1, label);
+    struct precode_block* commands = create_commands(node->s_2);
+
+    struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
+
+    cond_block->next = commands;
+    commands->previous = cond_block;
+    
+    struct precode_block* current_command = cond_block;
+    while (current_command->next != NULL) {
+        current_command = current_command->next;
+    }
+
+    (current_command->precode_list).push_back(new_precode_obj("LABEL", label, NULL));
+    current_command->length++;
+
+    return cond_block;
 }
 
 struct precode_block* create_while(struct ast* node) {
@@ -533,34 +551,28 @@ struct precode_block* create_write(struct ast* node) {
 
 
 struct precode_block* create_commands(struct ast* node) {
-    struct precode_block* root_block = new_precode_block(NULL, NULL, 0);
-    struct precode_block* current_block = root_block;
+    struct precode_block* root = NULL;
+    struct precode_block* block = NULL;
 
-    struct ast* current_node = node;
-    while (current_node->s_2 != NULL) {
-        struct precode_block* block = create_command(current_node->s_2);
-        if (root_block->next == NULL) {
-            root_block->next = block;
-            block->previous = root_block;
-        } else {
-            block->previous = current_block;
-            current_block->next = block;
+    if (node->s_2 != NULL) {
+        root = create_command(node->s_2);
+        block = create_commands(node->s_1);
+    }else {
+        root = create_command(node->s_1);
+    }
+
+    if (block != NULL) {
+        struct precode_block* last_from_block = block;
+        while (last_from_block->next != NULL) {
+            last_from_block = last_from_block->next;
         }
-        current_block = block;
-        current_node = current_node->s_1;
-    }
-    cout << current_node->s_1->type << endl;
-    struct precode_block* block = create_command(current_node->s_1);
-    if (root_block->next == NULL) {
-        root_block->next = block;
-        block->previous = root_block;
+        last_from_block->next = root;
+        root->previous = block;
+        return block;
     } else {
-        block->previous = current_block;
-        current_block->next = block;
+        return root;
     }
-    return block;
 }
-
 
 struct precode_block* create_command(struct ast* node) {
     if ((node->value).compare("ASSIGN") == 0) {
@@ -583,6 +595,7 @@ struct precode_block* create_command(struct ast* node) {
         return create_write(node);
     } else {
         return NULL;
+        // return create_write(node);
     }
 }
 
