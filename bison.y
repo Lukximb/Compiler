@@ -36,7 +36,8 @@
         registry = 1,
         arr = 2,
         constant = 3,
-        label = 4
+        label = 4,
+        iterator = 5
     };
 
     struct variable {
@@ -112,7 +113,9 @@
     map<string, struct array_object*> arrays;                               // all declared arrays
     string registries[8] = {"A", "B", "C", "D", "E", "F", "G", "H"};        // all available registries
 
-    int label_iterator = 0;      
+    int label_iterator = 0;
+    int iter_iterator = 0; 
+
     struct precode_block* root_block = new_precode_block(NULL, NULL, 0);
     struct precode_block* current_block = root_block;                                             // global id for labels
 
@@ -140,6 +143,7 @@
     struct precode_object* create_store(struct ast* node, string reg);
     struct variable* create_variable(struct ast* node);
     struct variable* get_new_label();
+    struct precode_block* get_new_iter(string name, struct ast* node);
 
     void print_precode_obj(struct precode_object* obj);
 %}
@@ -790,6 +794,21 @@ struct variable* get_new_label() {
     struct variable* new_label_id = new_variable(variable_label(label), "", "", label_iterator);
     label_iterator++;
     return new_label_id;
+}
+
+struct precode_block* get_new_iter(string name, struct ast* node) {
+    vector<struct precode_object*> precode_list;
+    variables[name] = iter_iterator;
+
+    precode_list.push_back(create_load(node, "B"));
+
+    struct variable* v = new_variable(variable_label(variable), name, "", iter_iterator);
+    struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
+    
+    precode_list.push_back(new_precode_obj("L_STORE_VAR", reg_b, v));
+
+    iter_iterator++;
+    return new_precode_block(NULL, NULL, precode_list, precode_list.size());
 }
 
 
