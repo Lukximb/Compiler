@@ -105,14 +105,33 @@
     map<string, struct array_object*> arrays;                               // all declared arrays
     string registries[8] = {"A", "B", "C", "D", "E", "F", "G", "H"};        // all available registries
 
+    int label_iterator = 0;                                                 // global id for labels
 
 // ========= FUNCTION DECLARATION =============
 
     void handle_program(struct ast* root);
     int semantic_analyse(struct ast* root);
     // struct block* create_condition(struct ast* condition);
-    // string create_value(struct ast* value);
+    // string create_load(struct ast* value);
+    struct precode_block* create_command(struct ast* node);
+    vector<struct precode_object*> create_expression(struct ast* node, string reg);
+
+    struct precode_block* create_assign(struct ast* node);
+    struct precode_block* create_ifelse(struct ast* node);
+    struct precode_block* create_if(struct ast* node);
+    struct precode_block* create_while(struct ast* node);
+    struct precode_block* create_dowhile(struct ast* node);
+    struct precode_block* create_forto(struct ast* node);
+    struct precode_block* create_fordownto(struct ast* node);
+    struct precode_block* create_read(struct ast* node);
+    struct precode_block* create_write(struct ast* node);
+
+    struct precode_object* create_load(struct ast* node, string reg);
+    struct precode_object* create_store(struct ast* node, string reg);
     struct variable* create_variable(struct ast* node);
+    struct variable* get_new_label();
+
+    void print_precode_obj(struct precode_object* obj);
 %}
 
 %union {
@@ -174,7 +193,7 @@ commands:
         $$ = newast("COMMANDS", $1, $2, NULL, NULL, "EMPTY", 0);
     }
 |	command     {
-        $$ = newast("COMMANDS", $1, NULL, NULL, NULL, "EMPTY", 0);
+        $$ = newast("COMMANDS1", $1, NULL, NULL, NULL, "EMPTY", 0);
     }
 ;
 
@@ -264,7 +283,7 @@ value:
 
 identifier:
 	ID  {
-        struct ast* id = newast(string("ID"), NULL, NULL, NULL, NULL, string($1), 0);
+        struct ast* id = newast(string("ID-"), NULL, NULL, NULL, NULL, string($1), 0);
         $$ = newast("IDENTIFIER1", id, NULL, NULL, NULL, "EMPTY", 0);
     }
 |	ID'('ID')'  {
@@ -343,16 +362,21 @@ struct variable* new_variable(variable_label label,
         string id_1,
         string id_2,
         int value) {
+
     struct variable* var = (struct variable*)malloc(sizeof(struct variable));
-    
+
     if (!var) {
         cout << "ERR: var out of space" << endl;
         yyerror("Err: out of space\n");
         exit(1);
     }
     var->label = label;
-    var->id_1 = id_1;
-    var->id_2 = id_2;
+    if (!id_1.empty()) {
+        var->id_1 = id_1;
+    }
+    if (!id_2.empty()) {
+        var->id_2 = id_2;
+    }
     var->value = value;
 
     return var;
@@ -402,9 +426,16 @@ void handle_program(struct ast* root) {
         cout << "Semantic Error" << endl;
         return;
     }
+    create_command(root->s_2->s_1);
+    struct precode_block* block = create_assign(root->s_2->s_1);
     // cout << "condition" << endl;
     // create_condition(root);
     cout << "handle program" << endl;
+
+    cout << endl << "=== block ===" << endl;
+    for (int i = 0; i < block->precode_list.size(); i++) {
+        print_precode_obj(block->precode_list[i]);
+    }
 }
 
 int semantic_analyse(struct ast* root) {
@@ -412,23 +443,151 @@ int semantic_analyse(struct ast* root) {
     return 1;
 }
 
-struct precode_object* create_value(struct ast* node, string reg) {
+
+// ============ PRECODE CONSTRUCTORS ==================
+
+struct precode_block* create_assign(struct ast* node) {
+    string reg = "B";
+    vector<struct precode_object*> precode_list = create_expression(node->s_2, reg);
+    precode_list.push_back(create_store(node, reg));
+
+    return new_precode_block(NULL, NULL, precode_list, precode_list.size());
+}
+
+struct precode_block* create_ifelse(struct ast* node) {
+    return NULL;
+}
+
+struct precode_block* create_if(struct ast* node) {
+    return NULL;
+}
+
+struct precode_block* create_while(struct ast* node) {
+    return NULL;
+}
+
+struct precode_block* create_dowhile(struct ast* node) {
+    return NULL;
+}
+
+struct precode_block* create_forto(struct ast* node) {
+    return NULL;
+}
+
+struct precode_block* create_fordownto(struct ast* node) {
+    return NULL;
+}
+
+struct precode_block* create_read(struct ast* node) {
+    return NULL;
+}
+
+struct precode_block* create_write(struct ast* node) {
+    return NULL;
+}
+
+
+
+
+
+// ===== PRIVATE FUNCTIONS ================
+
+struct precode_block* create_command(struct ast* node) {
+    if ((node->value).compare("ASSIGN") == 0) {
+        return create_assign(node);
+    } else if ((node->value).compare("IFELSE") == 0) {
+        return create_ifelse(node);
+    } else if ((node->value).compare("IF") == 0) {
+        return create_if(node);
+    } else if ((node->value).compare("WHILE") == 0) {
+        return create_while(node);
+    } else if ((node->value).compare("DOWHILE") == 0) {
+        return create_dowhile(node);
+    } else if ((node->value).compare("FORTO") == 0) {
+        return create_forto(node);
+    } else if ((node->value).compare("FORDOWNTO") == 0) {
+        return create_fordownto(node);
+    } else if ((node->value).compare("READ") == 0) {
+        return create_read(node);
+    } else if ((node->value).compare("WRITE") == 0) {
+        return create_write(node);
+    } else {
+        return NULL;
+    }
+}
+
+
+vector<struct precode_object*> create_expression(struct ast* node, string reg) {
+    vector<struct precode_object*> precode_list;
+    if ((node->value).compare("EMPTY") == 0) {
+        precode_list.push_back(create_load(node->s_1, reg));
+    } else {
+        precode_list.push_back(create_load(node->s_1, reg));
+        precode_list.push_back(create_load(node->s_2, "C"));
+
+        struct variable* reg_1 = new_variable(variable_label(registry), reg, "", 0);
+        struct variable* reg_2 = new_variable(variable_label(registry), "C", "", 0);
+        
+        if ((node->value).compare("+") == 0) {
+            precode_list.push_back(new_precode_obj("ADD", reg_1, reg_2));
+        } else if ((node->value).compare("-") == 0) {
+            precode_list.push_back(new_precode_obj("SUB", reg_1, reg_2));
+        } else if ((node->value).compare("*") == 0) {
+            precode_list.push_back(new_precode_obj("L_MULT", reg_1, reg_2));
+        } else if ((node->value).compare("/") == 0) {
+            precode_list.push_back(new_precode_obj("L_DIV", reg_1, reg_2));
+        } else if ((node->value).compare("%") == 0) {
+            precode_list.push_back(new_precode_obj("L_MOD", reg_1, reg_2));
+        }
+    }
+    return precode_list;
+}
+
+struct precode_object* create_load(struct ast* node, string reg) {
     struct variable* v_1 = create_variable(node);
-    struct variable* v_2 = new_variable(variable_label(registry), reg, NULL, 0);
+    struct variable* v_2 = new_variable(variable_label(registry), reg, "", 0);
     
-    return new_precode_obj("LOAD_VAR", v_1, v_2);
+    return new_precode_obj("L_LOAD_VAR", v_1, v_2);
+}
+
+struct precode_object* create_store(struct ast* node, string reg) {
+    struct variable* v_1 = create_variable(node);
+    struct variable* v_2 = new_variable(variable_label(registry), reg, "", 0);
+    
+    return new_precode_obj("L_STORE_VAR", v_2, v_1);
 }
 
 struct variable* create_variable(struct ast* node) {
     if ((node->type).compare("NUM") == 0) {
-        return new_variable(variable_label(constant), NULL, NULL, node->s_1->number);
+        int n = node->s_1->number;
+        return new_variable(variable_label(constant), "", "", node->s_1->number);
     } else {
         if ((node->s_1->type).compare("IDENTIFIER1") == 0) {
-            return new_variable(variable_label(variable), node->s_1->s_1->value, NULL, 0);
+            return new_variable(variable_label(variable), node->s_1->s_1->value, "", 0);
         } else if ((node->s_1->type).compare("IDENTIFIER2") == 0) {
-            return new_variable(variable_label(arr), node->s_1->s_1->value, node->s_1->s_2->value, 0);
+            return new_variable(variable_label(arr), node->s_1->value, node->s_1->s_2->value, 0);
         } else {
-            return new_variable(variable_label(arr), node->s_1->s_1->value, NULL, node->s_1->s_2->number);
+            return new_variable(variable_label(arr), node->s_1->value, "", node->s_1->s_2->number);
         }
     }
+}
+
+struct variable* get_new_label() {
+    struct variable* new_label_id = new_variable(variable_label(constant), "", "", label_iterator);
+    label_iterator++;
+    return new_label_id;
+}
+
+
+// ================== OTHERS =============
+
+void print_precode_obj(struct precode_object* obj) {
+    cout << obj->label << " ";
+    if (obj->var_1 != NULL) {
+        cout << obj->var_1->label << " ";
+    }
+    if (obj->var_2 != NULL) {
+        cout << obj->var_2->label;
+    }
+    cout << endl;
 }
