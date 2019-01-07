@@ -35,7 +35,8 @@
         variable = 0,
         registry = 1,
         arr = 2,
-        constant = 3
+        constant = 3,
+        label = 4
     };
 
     struct variable {
@@ -121,6 +122,7 @@
     struct precode_block* create_commands(struct ast* node);
     struct precode_block* create_command(struct ast* node);
     vector<struct precode_object*> create_expression(struct ast* node, string reg);
+    vector<struct precode_object*> create_condition(struct ast* node, struct variable* label);
 
     struct precode_block* create_assign(struct ast* node);
     struct precode_block* create_ifelse(struct ast* node);
@@ -453,7 +455,6 @@ void handle_program(struct ast* root) {
     struct precode_block* block = create_commands(root->s_2);
     cout << "handle program" << endl;
 
-    // block = block->next;
     while (block->length > 0) {
         cout << endl << "=== block ===" << endl;
         for (int i = 0; i < block->precode_list.size(); i++) {
@@ -461,10 +462,7 @@ void handle_program(struct ast* root) {
         }
         block = block->previous;
     }
-    // cout << endl << "=== block ===" << endl;
-    // for (int i = 0; i < block->precode_list.size(); i++) {
-    //     print_precode_obj(block->precode_list[i]);
-    // }
+
 }
 
 int semantic_analyse(struct ast* root) {
@@ -548,10 +546,6 @@ struct precode_block* create_commands(struct ast* node) {
         block->previous = current_block;
         current_block->next = block;
     }
-
-    // cout << root_block->length << endl;
-    // cout << root_block->next->length << endl;
-
     return block;
 }
 
@@ -580,6 +574,65 @@ struct precode_block* create_command(struct ast* node) {
     }
 }
 
+vector<struct precode_object*> create_condition(struct ast* node, struct variable* label) {
+    vector<struct precode_object*> precode_list;
+
+    struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
+    struct variable* reg_c = new_variable(variable_label(registry), "C", "", 0);
+    struct variable* reg_d = new_variable(variable_label(registry), "D", "", 0);
+
+    if ((node->value).compare("<") == 0) { // a < b; b - a; a -> C; b -> B
+        precode_list.push_back(create_load(node->s_1, "C"));
+        precode_list.push_back(create_load(node->s_2, "B"));
+        precode_list.push_back(new_precode_obj("SUB", reg_b, reg_c));
+        precode_list.push_back(new_precode_obj("JZERO", reg_b, label));
+    } else if ((node->value).compare(">") == 0) { // a > b; b < a; a - b; a -> C; b -> B
+        precode_list.push_back(create_load(node->s_1, "C"));
+        precode_list.push_back(create_load(node->s_2, "B"));
+        precode_list.push_back(new_precode_obj("SUB", reg_c, reg_b));
+        precode_list.push_back(new_precode_obj("JZERO", reg_c, label));
+    } else if ((node->value).compare("<=") == 0) { // a <= b; a - b; a -> B; b -> C
+        struct variable* var = new_variable(variable_label(constant), "", "", 2);
+        precode_list.push_back(create_load(node->s_1, "B"));
+        precode_list.push_back(create_load(node->s_2, "C"));
+        precode_list.push_back(new_precode_obj("SUB", reg_b, reg_c));
+        precode_list.push_back(new_precode_obj("JZERO_2", reg_b, var));
+        precode_list.push_back(new_precode_obj("JUMP", label, NULL));
+    } else if ((node->value).compare(">=") == 0) { // a >= b; b <= a; b - a; b -> B; a -> C
+        struct variable* var = new_variable(variable_label(constant), "", "", 2);
+        precode_list.push_back(create_load(node->s_1, "C"));
+        precode_list.push_back(create_load(node->s_2, "B"));
+        precode_list.push_back(new_precode_obj("SUB", reg_b, reg_c));
+        precode_list.push_back(new_precode_obj("JZERO_2", reg_b, var));
+        precode_list.push_back(new_precode_obj("JUMP", label, NULL));
+    } else if ((node->value).compare("=") == 0) { 
+        // a == b; b == a; a - b; b - a; b -> B; a -> C,D
+        struct variable* var = new_variable(variable_label(constant), "", "", 2);
+        precode_list.push_back(create_load(node->s_1, "C"));
+        precode_list.push_back(create_load(node->s_2, "B"));
+        precode_list.push_back(new_precode_obj("COPY", reg_d, reg_c));
+        precode_list.push_back(new_precode_obj("SUB", reg_c, reg_b));
+        precode_list.push_back(new_precode_obj("JZERO_2", reg_c, var));
+        precode_list.push_back(new_precode_obj("JUMP", label, NULL));
+        precode_list.push_back(new_precode_obj("SUB", reg_b, reg_d));
+        precode_list.push_back(new_precode_obj("JZERO_2", reg_b, var));
+        precode_list.push_back(new_precode_obj("JUMP", label, NULL));
+    } else if ((node->value).compare("=") == 0) { 
+        // a == b; b == a; a - b; b - a; b -> B; a -> C,D
+        struct variable* var = new_variable(variable_label(constant), "", "", 2);
+        struct variable* comm = new_variable(variable_label(constant), "", "", 3); // jump to commands
+        precode_list.push_back(create_load(node->s_1, "C"));
+        precode_list.push_back(create_load(node->s_2, "B"));
+        precode_list.push_back(new_precode_obj("COPY", reg_d, reg_c));
+        precode_list.push_back(new_precode_obj("SUB", reg_c, reg_b));
+        precode_list.push_back(new_precode_obj("JZERO_2", reg_c, var));
+        precode_list.push_back(new_precode_obj("JUMP", comm, NULL));
+        precode_list.push_back(new_precode_obj("SUB", reg_b, reg_d));
+        precode_list.push_back(new_precode_obj("JZERO_2", reg_b, label));
+    }
+    
+    return precode_list;
+}
 
 vector<struct precode_object*> create_expression(struct ast* node, string reg) {
     vector<struct precode_object*> precode_list;
@@ -637,7 +690,7 @@ struct variable* create_variable(struct ast* node) {
 }
 
 struct variable* get_new_label() {
-    struct variable* new_label_id = new_variable(variable_label(constant), "", "", label_iterator);
+    struct variable* new_label_id = new_variable(variable_label(label), "", "", label_iterator);
     label_iterator++;
     return new_label_id;
 }
