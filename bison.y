@@ -34,7 +34,7 @@
     enum variable_label {
         variable = 0,
         registry = 1,
-        array = 2,
+        arr = 2,
         constant = 3
     };
 
@@ -112,6 +112,7 @@
     int semantic_analyse(struct ast* root);
     // struct block* create_condition(struct ast* condition);
     // string create_value(struct ast* value);
+    struct variable* create_variable(struct ast* node);
 %}
 
 %union {
@@ -254,7 +255,7 @@ condition:
 value:
 	NUM     {
         struct ast* num = newast("NUM", NULL, NULL, NULL, NULL, "EMPTY", $1);
-        $$ = newast("VALUE", num, NULL, NULL, NULL, "EMPTY", 0);
+        $$ = newast("NUM", num, NULL, NULL, NULL, "EMPTY", 0);
     }
 |	identifier  {
         $$ = newast("VALUE", $1, NULL, NULL, NULL, "EMPTY", 0);
@@ -264,7 +265,6 @@ value:
 identifier:
 	ID  {
         struct ast* id = newast(string("ID"), NULL, NULL, NULL, NULL, string($1), 0);
-        // cout << "bison: identifier" << endl;
         $$ = newast("IDENTIFIER1", id, NULL, NULL, NULL, "EMPTY", 0);
     }
 |	ID'('ID')'  {
@@ -396,21 +396,6 @@ struct precode_block* new_precode_block(
     return block;
 }
 
-// struct block* new_block() {
-//     struct block* block = (struct block*)malloc(sizeof(struct block));
-
-//     if (!block) {
-//         cout << "Err: block out of space" << endl;
-//         yyerror("Err: block out of space\n");
-//         exit(1);
-//     }
-//     block->prev_block = NULL;
-//     block->next_block = NULL;
-//     // block->vector = s_2;
-//     block->length = 0;
-//     return block;
-// }
-
 void handle_program(struct ast* root) {
     int result = semantic_analyse(root);
     if (result != 1) {
@@ -427,41 +412,23 @@ int semantic_analyse(struct ast* root) {
     return 1;
 }
 
-// void create_if(struct ast* node) {
-//     // warunek
-//     // tworzenie jumpow
-//     // wywolanie stwoerzenia instrukcji wew.
-//     // tworzenie zakonczen
+struct precode_object* create_value(struct ast* node, string reg) {
+    struct variable* v_1 = create_variable(node);
+    struct variable* v_2 = new_variable(variable_label(registry), reg, NULL, 0);
+    
+    return new_precode_obj("LOAD_VAR", v_1, v_2);
+}
 
-
-// }
-
-// void create_ifelse(struct ast* node) {
-
-// }
-
-// struct block* create_condition(struct ast* condition) {
-//     // condition (s_1 value s_2)
-//     struct block* block = new_block();
-
-//     if (string(condition->value).compare(">") == 0) {
-//         block->codes.push_back(create_value(condition->s_2) + "<" + create_value(condition->s_1));
-//     } else if (string(condition->value).compare(">") == 0) {
-//         block->codes.push_back(create_value(condition->s_2) + "<" + create_value(condition->s_1));
-//     }
-//     cout << condition->value << "@" << endl;
-//     // cout << block->codes[0] << endl;
-//     return block;
-// }
-
-// string create_value(struct ast* value) {
-//     if ((value->s_1->type).compare("NUM")) {
-//         return string(to_string(value->s_1->number));
-//     } else if ((value->s_1->type).compare("IDENTIFIER1")) {
-//         return string(value->s_1->s_1->value);
-//     } else if ((value->s_1->type).compare("IDENTIFIER2")) {
-//         return string(value->s_1->s_1->value + "(" + value->s_1->s_2->value + ")");
-//     } else {
-//         return string(value->s_1->s_1->value + "(" + string(to_string(value->s_1->s_2->number)) + ")");
-//     }
-// }
+struct variable* create_variable(struct ast* node) {
+    if ((node->type).compare("NUM") == 0) {
+        return new_variable(variable_label(constant), NULL, NULL, node->s_1->number);
+    } else {
+        if ((node->s_1->type).compare("IDENTIFIER1") == 0) {
+            return new_variable(variable_label(variable), node->s_1->s_1->value, NULL, 0);
+        } else if ((node->s_1->type).compare("IDENTIFIER2") == 0) {
+            return new_variable(variable_label(arr), node->s_1->s_1->value, node->s_1->s_2->value, 0);
+        } else {
+            return new_variable(variable_label(arr), node->s_1->s_1->value, NULL, node->s_1->s_2->number);
+        }
+    }
+}
