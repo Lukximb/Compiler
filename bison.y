@@ -507,7 +507,7 @@ struct precode_block* create_fordownto(struct ast* node) {
 
 struct precode_block* create_read(struct ast* node) {
     vector<struct precode_object*> precode_list;
-    
+
     struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
     precode_list.push_back(new_precode_obj("GET", reg_b, NULL));
     precode_list.push_back(create_store(node, "B"));
@@ -519,8 +519,8 @@ struct precode_block* create_write(struct ast* node) {
     vector<struct precode_object*> precode_list;
 
     struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
-    precode_list.push_back(create_load(node, "B"));
-    precode_list.push_back(new_precode_obj("GET", reg_b, NULL));
+    precode_list.push_back(create_load(node->s_1, "B"));
+    precode_list.push_back(new_precode_obj("PUT", reg_b, NULL));
 
     return new_precode_block(NULL, NULL, precode_list, precode_list.size());
 }
@@ -711,12 +711,28 @@ struct variable* get_new_label() {
 // ================== OTHERS =============
 
 void print_precode_obj(struct precode_object* obj) {
+    string labels[] = {"variable", "registry", "arr", "constant", "label"};
+
     cout << obj->label << " ";
     if (obj->var_1 != NULL) {
-        cout << obj->var_1->label << " ";
+        cout << labels[obj->var_1->label] << "[";
+        if (obj->var_1->label == 0 || obj->var_1->label == 1) {
+            cout << obj->var_1->id_1 << "] ";
+        } else if (obj->var_1->label == 2) {
+            cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+        } else {
+            cout << obj->var_1->value << "] ";
+        }
     }
     if (obj->var_2 != NULL) {
-        cout << obj->var_2->label;
+        cout << labels[obj->var_2->label] << "[";
+        if (obj->var_2->label == 0 || obj->var_2->label == 1) {
+            cout << obj->var_2->id_1 << "] ";
+        } else if (obj->var_2->label == 2) {
+            cout << obj->var_2->id_1 << "(" << obj->var_2->id_2 << ")] ";
+        } else {
+            cout << obj->var_2->value << "] ";
+        }
     }
     cout << endl;
 }
