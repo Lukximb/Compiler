@@ -506,11 +506,23 @@ struct precode_block* create_fordownto(struct ast* node) {
 }
 
 struct precode_block* create_read(struct ast* node) {
-    return NULL;
+    vector<struct precode_object*> precode_list;
+    
+    struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
+    precode_list.push_back(new_precode_obj("GET", reg_b, NULL));
+    precode_list.push_back(create_store(node, "B"));
+
+    return new_precode_block(NULL, NULL, precode_list, precode_list.size());
 }
 
 struct precode_block* create_write(struct ast* node) {
-    return NULL;
+    vector<struct precode_object*> precode_list;
+
+    struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
+    precode_list.push_back(create_load(node, "B"));
+    precode_list.push_back(new_precode_obj("GET", reg_b, NULL));
+
+    return new_precode_block(NULL, NULL, precode_list, precode_list.size());
 }
 
 
