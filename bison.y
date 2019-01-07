@@ -483,7 +483,29 @@ struct precode_block* create_assign(struct ast* node) {
 }
 
 struct precode_block* create_ifelse(struct ast* node) {
-    return NULL;
+    struct variable* label_else = get_new_label();
+
+    vector<struct precode_object*> cond = create_condition(node->s_1, label_else);
+    struct precode_block* commands_1 = create_commands(node->s_2);
+    struct precode_block* commands_2 = create_commands(node->s_3);
+
+    struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
+
+    cond_block->next = commands_1;
+    commands_1->previous = cond_block;
+    
+    struct precode_block* current_command = cond_block;
+    while (current_command->next != NULL) {
+        current_command = current_command->next;
+    }
+
+    (current_command->precode_list).push_back(new_precode_obj("LABEL", label_else, NULL));
+    current_command->length++;
+
+    current_command->next = commands_2;
+    commands_2->previous = current_command;
+
+    return cond_block;
 }
 
 struct precode_block* create_if(struct ast* node) {
@@ -508,11 +530,61 @@ struct precode_block* create_if(struct ast* node) {
 }
 
 struct precode_block* create_while(struct ast* node) {
-    return NULL;
+    struct variable* label_while = get_new_label();
+    struct variable* label_end = get_new_label();
+    vector<struct precode_object*> cond = create_condition(node->s_1, label_end);
+    struct precode_block* commands = create_commands(node->s_2);
+
+    struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
+
+    vector<struct precode_object*>::iterator it;
+    it = (cond_block->precode_list).begin();
+
+    (cond_block->precode_list).insert(it, new_precode_obj("LABEL", label_while, NULL));
+    (cond_block->length)++;
+
+    cond_block->next = commands;
+    commands->previous = cond_block;
+    
+    struct precode_block* current_command = cond_block;
+    while (current_command->next != NULL) {
+        current_command = current_command->next;
+    }
+
+    (current_command->precode_list).push_back(new_precode_obj("JUMP", label_while, NULL));
+    (current_command->precode_list).push_back(new_precode_obj("LABEL", label_end, NULL));
+    current_command->length++;
+
+    return cond_block;
 }
 
 struct precode_block* create_dowhile(struct ast* node) {
-    return NULL;
+    struct variable* label_while = get_new_label();
+    struct variable* label_end = get_new_label();
+    vector<struct precode_object*> cond = create_condition(node->s_2, label_end);
+    struct precode_block* commands = create_commands(node->s_1);
+
+    struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
+
+    vector<struct precode_object*>::iterator it;
+    it = (commands->precode_list).begin();
+
+    (commands->precode_list).insert(it, new_precode_obj("LABEL", label_while, NULL));
+    (commands->length)++;
+
+    struct precode_block* current_command = commands;
+    while (current_command->next != NULL) {
+        current_command = current_command->next;
+    }
+
+    cond_block->previous = current_command;
+    current_command->next = cond_block;
+
+    (cond_block->precode_list).push_back(new_precode_obj("JUMP", label_while, NULL));
+    (cond_block->precode_list).push_back(new_precode_obj("LABEL", label_end, NULL));
+    cond_block->length += 2;
+
+    return commands;
 }
 
 struct precode_block* create_forto(struct ast* node) {
