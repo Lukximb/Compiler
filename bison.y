@@ -98,6 +98,12 @@
         int length
     );
 
+    struct precode_block* new_precode_block(
+        struct precode_block* previous,
+        struct precode_block* next,
+        int length
+    );
+
 
 
 // ========= VARIABLE DECLARATION =============
@@ -111,8 +117,8 @@
 
     void handle_program(struct ast* root);
     int semantic_analyse(struct ast* root);
-    // struct block* create_condition(struct ast* condition);
-    // string create_load(struct ast* value);
+
+    struct precode_block* create_commands(struct ast* node);
     struct precode_block* create_command(struct ast* node);
     vector<struct precode_object*> create_expression(struct ast* node, string reg);
 
@@ -420,22 +426,45 @@ struct precode_block* new_precode_block(
     return block;
 }
 
+struct precode_block* new_precode_block(
+        struct precode_block* previous,
+        struct precode_block* next,
+        int length) {
+    struct precode_block* block = (struct precode_block*)malloc(sizeof(struct precode_block));
+    
+    if (!block) {
+        cout << "ERR: block out of space" << endl;
+        yyerror("Err: block out of space\n");
+        exit(1);
+    }
+    block->previous = previous;
+    block->next = next;
+    block->length = length;
+
+    return block;
+}
+
 void handle_program(struct ast* root) {
     int result = semantic_analyse(root);
     if (result != 1) {
         cout << "Semantic Error" << endl;
         return;
     }
-    create_command(root->s_2->s_1);
-    struct precode_block* block = create_assign(root->s_2->s_1);
-    // cout << "condition" << endl;
-    // create_condition(root);
+    struct precode_block* block = create_commands(root->s_2);
     cout << "handle program" << endl;
 
-    cout << endl << "=== block ===" << endl;
-    for (int i = 0; i < block->precode_list.size(); i++) {
-        print_precode_obj(block->precode_list[i]);
+    // block = block->next;
+    while (block->length > 0) {
+        cout << endl << "=== block ===" << endl;
+        for (int i = 0; i < block->precode_list.size(); i++) {
+            print_precode_obj(block->precode_list[i]);
+        }
+        block = block->previous;
     }
+    // cout << endl << "=== block ===" << endl;
+    // for (int i = 0; i < block->precode_list.size(); i++) {
+    //     print_precode_obj(block->precode_list[i]);
+    // }
 }
 
 int semantic_analyse(struct ast* root) {
@@ -491,6 +520,41 @@ struct precode_block* create_write(struct ast* node) {
 
 
 // ===== PRIVATE FUNCTIONS ================
+
+
+struct precode_block* create_commands(struct ast* node) {
+    struct precode_block* root_block = new_precode_block(NULL, NULL, 0);
+    struct precode_block* current_block = root_block;
+
+    struct ast* current_node = node;
+    while (current_node->s_2 != NULL) {
+        struct precode_block* block = create_command(current_node->s_2);
+        if (root_block->next == NULL) {
+            root_block->next = block;
+            block->previous = root_block;
+        } else {
+            block->previous = current_block;
+            current_block->next = block;
+        }
+        current_block = block;
+        current_node = current_node->s_1;
+    }
+    cout << current_node->s_1->type << endl;
+    struct precode_block* block = create_command(current_node->s_1);
+    if (root_block->next == NULL) {
+        root_block->next = block;
+        block->previous = root_block;
+    } else {
+        block->previous = current_block;
+        current_block->next = block;
+    }
+
+    // cout << root_block->length << endl;
+    // cout << root_block->next->length << endl;
+
+    return block;
+}
+
 
 struct precode_block* create_command(struct ast* node) {
     if ((node->value).compare("ASSIGN") == 0) {
