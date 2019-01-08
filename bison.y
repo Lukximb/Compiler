@@ -112,13 +112,16 @@
 
 // ========= VARIABLE DECLARATION =============
     map<string, int> variables;                                             // all declared variables
-    map<string, struct array_object*> arrays;                               // all declared arrays
+    map<string, struct array_object*> arrays;   
+    map<int, int> labels;                            // all declared arrays
     string registries[8] = {"A", "B", "C", "D", "E", "F", "G", "H"};        // all available registries
 
     int label_iterator = 0;
     int iter_iterator = 0;
 
     int memory_counter = 0;
+
+    int lines = 0;
 
     struct precode_block* root_block = new_precode_block(NULL, NULL, 0);
     struct precode_block* current_block = root_block;                                             // global id for labels
@@ -152,6 +155,23 @@
     void print_precode_obj(struct precode_object* obj);
     void generate_var_to_map(string id);
     void generate_arr_to_map(struct ast* node);
+
+    void translate(struct precode_block* block);
+    vector<string> generate_const(int number, string reg);
+    void print_generate_const(vector<string> vec);
+    void gen_load(struct precode_object* line);
+    void gen_store(struct precode_object* line);
+    void gen_jzero_2(struct precode_object* line);
+    void gen_sub(struct precode_object* line);
+
+    void gen_get(struct precode_object* line);
+    void gen_put(struct precode_object* line);
+    void gen_label(struct precode_object* line);
+    void gen_jzero(struct precode_object* line);
+    void gen_jump(struct precode_object* line);
+    void gen_div(struct precode_object* line);
+    void gen_mull(struct precode_object* line);
+    void gen_mod(struct precode_object* line);
 %}
 
 %union {
@@ -466,6 +486,7 @@ void handle_program(struct ast* root) {
         return;
     }
     struct precode_block* block = create_commands(root->s_2);
+    struct precode_block* block_copy = block;
     cout << "handle program" << endl;
 
     while (NULL != block) {
@@ -476,6 +497,7 @@ void handle_program(struct ast* root) {
         block = block->next;
     }
 
+    translate(block_copy);
 }
 
 int semantic_analyse(struct ast* root) {
@@ -991,4 +1013,193 @@ void print_precode_obj(struct precode_object* obj) {
         }
     }
     cout << endl;
+}
+
+
+void translate(struct precode_block* block) {
+    cout << endl << "#########################" << endl;
+    while (NULL != block) {
+        for (int i = 0; i < block->precode_list.size(); i++) {
+            if (block->precode_list[i]->label.compare("L_LOAD_VAR") == 0) {
+                gen_load(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("L_STORE_VAR") == 0) {
+                gen_store(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("JZERO_2") == 0) {
+                gen_jzero_2(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("SUB") == 0) {
+                gen_sub(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("GET") == 0) {
+                gen_get(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("PUT") == 0) {
+                gen_put(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("LABEL") == 0) {
+                gen_label(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("JZERO") == 0) {
+                gen_jzero(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("JUMP") == 0) {
+                gen_jump(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("L_DIV") == 0) {
+                gen_div(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("L_MULT") == 0) {
+                gen_mull(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("L_MOD") == 0) {
+                gen_mod(block->precode_list[i]);
+            } else {
+                print_precode_obj(block->precode_list[i]);
+            }
+        }
+        block = block->next;
+    }
+}
+
+vector<string> generate_const(int number, string reg) {
+    vector<string> queue;
+    // queue.push_back("INC " + reg + " " + reg);
+    while (number > 0) {
+        if (number % 2 == 0) {
+            number /= 2;
+            queue.push_back("ADD " + reg + " " + reg);
+        } else {
+            number--;
+            queue.push_back("INC " + reg);
+        }
+    }
+    queue.push_back("SUB " + reg + " " + reg);
+    return queue;
+}
+
+void gen_jzero_2(struct precode_object* line) {
+    cout << "JZERO " << lines+2 << endl;
+    lines++;
+}
+
+void gen_sub(struct precode_object* line) {
+    cout << "SUB " << line->var_1->id_1 << " " << line->var_2->id_1 << endl;
+    lines++;
+}
+
+void gen_load(struct precode_object* line) {
+    if (line->var_1->label == 0 || line->var_1->label == 5) {
+        int n = variables[line->var_1->id_1];
+        vector<string> gen_n = generate_const(n, "A");
+        print_generate_const(gen_n);
+        cout << "LOAD " << line->var_2->id_1 << endl;
+        lines++;
+    } else if (line->var_1->label == 2) {
+        struct array_object* arr = arrays[line->var_1->id_1];
+        if ((line->var_1->id_2).compare("") == 0) {
+            int n = line->var_1->value - arr->start;
+            vector<string> gen_n = generate_const(n, "A");
+            print_generate_const(gen_n);
+            cout << "LOAD " << line->var_2->id_1 << endl;
+            lines++;
+        } else {
+            int a_ind = variables[line->var_1->id_2];
+            vector<string> gen_n = generate_const(a_ind, "A");
+            vector<string> a_from = generate_const(arr->start, "B");
+            print_generate_const(gen_n);
+            cout << "LOAD " << line->var_2->id_1 << endl;
+            lines++;
+            print_generate_const(a_from);
+            cout << "SUB A " << line->var_2->id_1 << endl;
+            cout << "LOAD " << line->var_2->id_1 << endl;
+            lines += 2;
+        }
+    } else if (line->var_1->label == 3) {
+        vector<string> n = generate_const(line->var_1->value, "B");
+        print_generate_const(n);
+    }
+}
+
+void gen_store(struct precode_object* line) {
+    if (line->var_2->label == 0 || line->var_2->label == 5) {
+        int n = variables[line->var_2->id_1];
+        vector<string> gen_n = generate_const(n, "A");
+
+        print_generate_const(gen_n);
+        cout << "STORE " << line->var_1->id_1 << endl;
+        lines++;
+    } else if (line->var_2->label == 2) {
+        struct array_object* arr = arrays[line->var_2->id_1];
+        if ((line->var_2->id_2).compare("") == 0) {
+            int n = line->var_2->value - arr->start;
+            vector<string> gen_n = generate_const(n, "A");
+ 
+            print_generate_const(gen_n);
+            cout << "STORE " << line->var_1->id_1 << endl;
+            lines++;
+        } else {
+            int a_ind = variables[line->var_2->id_2];
+            vector<string> gen_n = generate_const(a_ind, "A");
+            vector<string> a_from = generate_const(arr->start, "B");
+
+            print_generate_const(gen_n);
+            cout << "STORE " << line->var_1->id_1 << endl;
+            lines++;
+ 
+            print_generate_const(a_from);
+            cout << "SUB A " << line->var_1->id_1 << endl;
+            cout << "STORE " << line->var_1->id_1 << endl;
+            lines += 2;
+        }
+    } 
+}
+
+void print_generate_const(vector<string> vec) {
+    for (int i = vec.size()-1; i >= 0; i--) {
+        cout << vec[i] << endl;
+        lines++;
+    }
+}
+
+void gen_get(struct precode_object* line) {
+    cout << "GET " << line->var_1->id_1 << endl;
+}
+
+void gen_put(struct precode_object* line) {
+    cout << "PUT " << line->var_1->id_1 << endl;
+}
+
+void gen_label(struct precode_object* line) {
+    print_precode_obj(line);
+}
+
+void gen_jzero(struct precode_object* line) {
+    print_precode_obj(line);
+}
+
+void gen_jump(struct precode_object* line) {
+    print_precode_obj(line);
+}
+
+void gen_div(struct precode_object* line) {
+    cout << "SUB D D" << endl;
+    lines++;
+    cout << "SUB " << line->var_1->id_1 << " " << line->var_2->id_1  << endl;
+    lines++;
+    cout << "JZERO "  << line->var_1->id_1 << " " << (lines+3) << endl;
+    lines++;
+    cout << "INC D" << endl;
+    lines++;
+    cout << "JUMP " << (lines-3) << endl;
+    lines++;
+    cout << "COPY " << line->var_1->id_1 << " " << "D" << endl;
+    lines++;
+}
+
+void gen_mull(struct precode_object* line) {
+    print_precode_obj(line);
+}
+
+void gen_mod(struct precode_object* line) {
+    cout << "SUB " << line->var_1->id_1 << " " << line->var_2->id_1  << endl;
+    lines++;
+    cout << "COPY D " << line->var_1->id_1 << endl;
+    lines++;
+    cout << "JZERO "  << line->var_1->id_1 << " " << (lines+3) << endl;
+    lines++;
+    cout << "JUMP " << (lines-3) << endl;
+    lines++;
+    cout << "COPY " << line->var_1->id_1 << " D" << endl;
+    lines++;
 }
