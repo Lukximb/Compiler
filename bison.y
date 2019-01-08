@@ -29,6 +29,7 @@
         string id;
         int start;
         int end;
+        int memory_index;
     };
 
     enum variable_label {
@@ -77,7 +78,8 @@
     struct array_object* new_array_obj(
         string id,
         int start,
-        int end
+        int end,
+        int memory_index
     );
 
     struct variable* new_variable(
@@ -114,7 +116,9 @@
     string registries[8] = {"A", "B", "C", "D", "E", "F", "G", "H"};        // all available registries
 
     int label_iterator = 0;
-    int iter_iterator = 0; 
+    int iter_iterator = 0;
+
+    int memory_counter = 0;
 
     struct precode_block* root_block = new_precode_block(NULL, NULL, 0);
     struct precode_block* current_block = root_block;                                             // global id for labels
@@ -146,6 +150,8 @@
     struct precode_block* get_new_iter(string name, struct ast* node);
 
     void print_precode_obj(struct precode_object* obj);
+    void generate_var_to_map(string id);
+    void generate_arr_to_map(struct ast* node);
 %}
 
 %union {
@@ -192,11 +198,11 @@ declarations:
         struct ast* id = newast(string("ID"), NULL, NULL, NULL, NULL, $2, 0);
         $$ = newast("DECLARATIONS", $1, id, NULL, NULL, "DECVAR", 0);
     }
-|	declarations ID'('NUM':'NUM')'  {
+|	declarations ID'('NUM':'NUM')'';'  {
         struct ast* id = newast("ID", NULL, NULL, NULL, NULL, $2, 0);
         struct ast* num1 = newast("NUM", NULL, NULL, NULL, NULL, "EMPTY", $4);
         struct ast* num2 = newast("NUM", NULL, NULL, NULL, NULL, "EMPTY", $6);
-        $$ = newast("DECLARATIONS", $1, id, num1, num2, "DEACARR", 0);
+        $$ = newast("DECLARATIONS", $1, id, num1, num2, "DECARR", 0);
     }
 |       {$$ = newast("NULL", NULL, NULL, NULL, NULL, "NULL", 0);}
 ;
@@ -306,7 +312,6 @@ identifier:
     }
 |	ID'('NUM')' {
         struct ast* id = newast("ID", NULL, NULL, NULL, NULL, $1, 0);
-        cout << "@@@@@@@@@@@@ " << $3 << endl;
         struct ast* num = newast("NUM", NULL, NULL, NULL, NULL, "EMPTY", $3);
         $$ = newast("IDENTIFIER3", id, num, NULL, NULL, "EMPTY", 0);
     }
@@ -357,7 +362,8 @@ struct ast* newast(string type,
 struct array_object* new_array_obj(
         string id,
         int start,
-        int end) {
+        int end,
+        int memory_index) {
     struct array_object* arr = (struct array_object*)malloc(sizeof(struct array_object));
     
     if (!arr) {
@@ -368,6 +374,7 @@ struct array_object* new_array_obj(
     arr->id = id;
     arr->start = start;
     arr->end = end;
+    arr->memory_index = memory_index;
 
     return arr;
 }
@@ -472,8 +479,52 @@ void handle_program(struct ast* root) {
 }
 
 int semantic_analyse(struct ast* root) {
-    cout << "do semantic analyse..." << endl;
+    struct ast* next_node = root;
+    while ((next_node->value).compare("NULL") != 0) {
+        if ((next_node->value).compare("DECVAR") == 0) {
+            generate_var_to_map(next_node->s_2->value);
+        }
+        next_node = next_node->s_1;
+    }
+
+    next_node = root;
+    while ((next_node->value).compare("NULL") != 0) {
+        if ((next_node->value).compare("DECARR") == 0) {
+            generate_arr_to_map(next_node);
+        }
+        next_node = next_node->s_1;
+    }
     return 1;
+}
+
+void generate_var_to_map(string id) {
+    if (variables.find(id) != variables.end()) {
+        cout << "Declaration error" << endl << "     Variable " << id << " was already declared" << endl;
+        exit(1);
+    }
+    
+    variables[id] = memory_counter;
+    memory_counter++;
+}
+
+void generate_arr_to_map(struct ast* node) {
+    int v_1 = node->s_3->number;
+    int v_2 = node->s_4->number;
+    string name = node->s_2->value;
+
+    if (arrays.find(name) != arrays.end()) {
+        cout << "Declaration error" << endl << "     Array " << name << " was already declared" << endl;
+        exit(1);
+    }     
+
+    if (v_1 > v_2) {
+        printf("Declaration error\n     Cannot generate array in range %d:%d\n", v_1, v_2);
+        exit(1);
+    }
+
+    struct array_object* arr = new_array_obj(name, v_1, v_2, memory_counter);
+    memory_counter += v_2 - v_1 + 1;
+    arrays[name] = arr;
 }
 
 
@@ -878,7 +929,6 @@ struct variable* create_variable(struct ast* node) {
         } else if ((node->s_1->type).compare("IDENTIFIER2") == 0) {
             return new_variable(variable_label(arr), node->s_1->s_1->value, node->s_1->s_2->value, 0);
         } else {
-            cout << "### " << node->s_1->s_2->number << endl;
             return new_variable(variable_label(arr), node->s_1->s_1->value, "", node->s_1->s_2->number);
         }
     }
