@@ -301,11 +301,12 @@ identifier:
     }
 |	ID'('ID')'  {
         struct ast* id1 = newast("ID", NULL, NULL, NULL, NULL, $1, 0);
-        struct ast* id2 = newast("ID", NULL, NULL, NULL, NULL, $2, 0);
+        struct ast* id2 = newast("ID", NULL, NULL, NULL, NULL, $3, 0);
         $$ = newast("IDENTIFIER2", id1, id2, NULL, NULL, "EMPTY", 0);
     }
 |	ID'('NUM')' {
         struct ast* id = newast("ID", NULL, NULL, NULL, NULL, $1, 0);
+        cout << "@@@@@@@@@@@@ " << $3 << endl;
         struct ast* num = newast("NUM", NULL, NULL, NULL, NULL, "EMPTY", $3);
         $$ = newast("IDENTIFIER3", id, num, NULL, NULL, "EMPTY", 0);
     }
@@ -642,7 +643,53 @@ struct precode_block* create_forto(struct ast* node) {
 }
 
 struct precode_block* create_fordownto(struct ast* node) {
-    return NULL;
+    struct variable* label_for = get_new_label();
+    struct variable* label_end = get_new_label();
+
+    struct precode_block* iter_block = get_new_iter(node->s_1->value, node->s_2);
+
+    (iter_block->precode_list).push_back(new_precode_obj("LABEL", label_for, NULL));
+    (iter_block->length)++;
+
+    // GENERATE CONDITION
+    vector<struct precode_object*> cond;
+
+    struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
+    struct variable* reg_c = new_variable(variable_label(registry), "C", "", 0);
+    struct variable* iter = new_variable(variable_label(variable), node->s_1->value, "", 0);
+    
+    cond.push_back(new_precode_obj("L_LOAD_VAR", iter, reg_c));
+    cond.push_back(create_load(node->s_3, "B"));
+    cond.push_back(new_precode_obj("SUB", reg_c, reg_b));
+    cond.push_back(new_precode_obj("JZERO", reg_c, label_end));
+
+    struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
+    // END CONDITION
+
+    struct precode_block* commands = create_commands(node->s_4);
+
+    iter_block->next = cond_block;
+    cond_block->previous = iter_block;
+
+    cond_block->next = commands;
+    commands->previous = cond_block;
+    
+    struct precode_block* current_command = commands;
+    while (current_command->next != NULL) {
+        current_command = current_command->next;
+    }
+
+    // DECREMENT ITERATOR
+    (current_command->precode_list).push_back(new_precode_obj("L_LOAD_VAR", iter, reg_b));
+    (current_command->precode_list).push_back(new_precode_obj("DEC", reg_b, NULL));
+    (current_command->precode_list).push_back(new_precode_obj("L_STORE_VAR", reg_b, iter));
+    // END DECREMENT
+
+    (current_command->precode_list).push_back(new_precode_obj("JUMP", label_for, NULL));
+    (current_command->precode_list).push_back(new_precode_obj("LABEL", label_end, NULL));
+    (current_command->length) += 5;
+
+    return iter_block;
 }
 
 struct precode_block* create_read(struct ast* node) {
@@ -829,9 +876,10 @@ struct variable* create_variable(struct ast* node) {
         if ((node->s_1->type).compare("IDENTIFIER1") == 0) {
             return new_variable(variable_label(variable), node->s_1->s_1->value, "", 0);
         } else if ((node->s_1->type).compare("IDENTIFIER2") == 0) {
-            return new_variable(variable_label(arr), node->s_1->value, node->s_1->s_2->value, 0);
+            return new_variable(variable_label(arr), node->s_1->s_1->value, node->s_1->s_2->value, 0);
         } else {
-            return new_variable(variable_label(arr), node->s_1->value, "", node->s_1->s_2->number);
+            cout << "### " << node->s_1->s_2->number << endl;
+            return new_variable(variable_label(arr), node->s_1->s_1->value, "", node->s_1->s_2->number);
         }
     }
 }
@@ -869,7 +917,11 @@ void print_precode_obj(struct precode_object* obj) {
         if (obj->var_1->label == 0 || obj->var_1->label == 1 || obj->var_1->label == 5) {
             cout << obj->var_1->id_1 << "] ";
         } else if (obj->var_1->label == 2) {
-            cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+            if ((obj->var_1->id_2).compare("") == 0) {
+                cout << obj->var_1->id_1 << "(" << obj->var_1->value << ")] ";
+            } else {
+                cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+            }
         } else {
             cout << obj->var_1->value << "] ";
         }
@@ -879,7 +931,11 @@ void print_precode_obj(struct precode_object* obj) {
         if (obj->var_2->label == 0 || obj->var_2->label == 1 || obj->var_1->label == 5) {
             cout << obj->var_2->id_1 << "] ";
         } else if (obj->var_2->label == 2) {
-            cout << obj->var_2->id_1 << "(" << obj->var_2->id_2 << ")] ";
+            if ((obj->var_1->id_2).compare("") == 0) {
+                cout << obj->var_1->id_1 << "(" << obj->var_1->value << ")] ";
+            } else {
+                cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+            }
         } else {
             cout << obj->var_2->value << "] ";
         }
