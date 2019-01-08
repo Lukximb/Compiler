@@ -592,7 +592,53 @@ struct precode_block* create_dowhile(struct ast* node) {
 }
 
 struct precode_block* create_forto(struct ast* node) {
-    return NULL;
+    struct variable* label_for = get_new_label();
+    struct variable* label_end = get_new_label();
+
+    struct precode_block* iter_block = get_new_iter(node->s_1->value, node->s_2);
+
+    (iter_block->precode_list).push_back(new_precode_obj("LABEL", label_for, NULL));
+    (iter_block->length)++;
+
+    // GENERATE CONDITION
+    vector<struct precode_object*> cond;
+
+    struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
+    struct variable* reg_c = new_variable(variable_label(registry), "C", "", 0);
+    struct variable* iter = new_variable(variable_label(variable), node->s_1->value, "", 0);
+    
+    cond.push_back(new_precode_obj("L_LOAD_VAR", iter, reg_c));
+    cond.push_back(create_load(node->s_3, "B"));
+    cond.push_back(new_precode_obj("SUB", reg_b, reg_c));
+    cond.push_back(new_precode_obj("JZERO", reg_b, label_end));
+
+    struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
+    // END CONDITION
+
+    struct precode_block* commands = create_commands(node->s_4);
+
+    iter_block->next = cond_block;
+    cond_block->previous = iter_block;
+
+    cond_block->next = commands;
+    commands->previous = cond_block;
+    
+    struct precode_block* current_command = commands;
+    while (current_command->next != NULL) {
+        current_command = current_command->next;
+    }
+
+    // DECREMENT ITERATOR
+    (current_command->precode_list).push_back(new_precode_obj("L_LOAD_VAR", iter, reg_b));
+    (current_command->precode_list).push_back(new_precode_obj("INC", reg_b, NULL));
+    (current_command->precode_list).push_back(new_precode_obj("L_STORE_VAR", reg_b, iter));
+    // END DECREMENT
+
+    (current_command->precode_list).push_back(new_precode_obj("JUMP", label_for, NULL));
+    (current_command->precode_list).push_back(new_precode_obj("LABEL", label_end, NULL));
+    (current_command->length) += 5;
+
+    return iter_block;
 }
 
 struct precode_block* create_fordownto(struct ast* node) {
@@ -815,12 +861,12 @@ struct precode_block* get_new_iter(string name, struct ast* node) {
 // ================== OTHERS =============
 
 void print_precode_obj(struct precode_object* obj) {
-    string labels[] = {"variable", "registry", "arr", "constant", "label"};
+    string labels[] = {"variable", "registry", "arr", "constant", "label", "iterator"};
 
     cout << obj->label << " ";
     if (obj->var_1 != NULL) {
         cout << labels[obj->var_1->label] << "[";
-        if (obj->var_1->label == 0 || obj->var_1->label == 1) {
+        if (obj->var_1->label == 0 || obj->var_1->label == 1 || obj->var_1->label == 5) {
             cout << obj->var_1->id_1 << "] ";
         } else if (obj->var_1->label == 2) {
             cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
@@ -830,7 +876,7 @@ void print_precode_obj(struct precode_object* obj) {
     }
     if (obj->var_2 != NULL) {
         cout << labels[obj->var_2->label] << "[";
-        if (obj->var_2->label == 0 || obj->var_2->label == 1) {
+        if (obj->var_2->label == 0 || obj->var_2->label == 1 || obj->var_1->label == 5) {
             cout << obj->var_2->id_1 << "] ";
         } else if (obj->var_2->label == 2) {
             cout << obj->var_2->id_1 << "(" << obj->var_2->id_2 << ")] ";
