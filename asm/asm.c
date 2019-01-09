@@ -17,6 +17,8 @@ void translate(struct precode_block* block) {
                 gen_store(block->precode_list[i]);
             } else if (block->precode_list[i]->label.compare("JZERO_2") == 0) {
                 gen_jzero_2(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("ADD") == 0) {
+                gen_add(block->precode_list[i]);
             } else if (block->precode_list[i]->label.compare("SUB") == 0) {
                 gen_sub(block->precode_list[i]);
             } else if (block->precode_list[i]->label.compare("GET") == 0) {
@@ -102,7 +104,7 @@ void gen_load(struct precode_object* line) {
             lines += 2;
         }
     } else if (line->var_1->label == 3) {
-        vector<string> n = generate_const(line->var_1->value, "B");
+        vector<string> n = generate_const(line->var_1->value, line->var_2->id_1);
         print_generate_const(n);
     }
 }
@@ -159,7 +161,7 @@ void gen_put(struct precode_object* line) {
 }
 
 void gen_label(struct precode_object* line) {
-    labels[string(to_string(line->var_1->value))] = lines+1;
+    labels[string(to_string(line->var_1->value))] = lines;
 }
 
 void gen_jzero(struct precode_object* line) {
@@ -223,6 +225,11 @@ void gen_mod(struct precode_object* line) {
     asm_code.push_back("JUMP " + string(to_string(lines-3)));
     lines++;
     asm_code.push_back("COPY " + line->var_1->id_1 + " D");
+    lines++;
+}
+
+void gen_add(struct precode_object* line) {
+    asm_code.push_back("ADD " + line->var_1->id_1 + " " + line->var_2->id_1);
     lines++;
 }
 

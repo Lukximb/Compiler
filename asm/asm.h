@@ -25,6 +25,8 @@ void gen_jzero_2(struct precode_object* line);
 
 void gen_sub(struct precode_object* line);
 
+void gen_add(struct precode_object* line);
+
 void gen_load(struct precode_object* line);
 
 void gen_store(struct precode_object* line);
