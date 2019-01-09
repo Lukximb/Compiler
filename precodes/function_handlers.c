@@ -61,6 +61,7 @@ struct precode_block* create_assign(struct ast* node) {
 
 struct precode_block* create_ifelse(struct ast* node) {
     struct variable* label_else = get_new_label();
+    struct variable* label_end = get_new_label();
 
     vector<struct precode_object*> cond = create_condition(node->s_1, label_else);
     struct precode_block* commands_1 = create_commands(node->s_2);
@@ -76,11 +77,20 @@ struct precode_block* create_ifelse(struct ast* node) {
         current_command = current_command->next;
     }
 
+    (current_command->precode_list).push_back(new_precode_obj("JUMP", label_end, NULL));
     (current_command->precode_list).push_back(new_precode_obj("LABEL", label_else, NULL));
-    current_command->length++;
+    current_command->length += 2;
 
     current_command->next = commands_2;
     commands_2->previous = current_command;
+
+    struct precode_block* current_command_2 = cond_block;
+    while (current_command_2->next != NULL) {
+        current_command_2 = current_command_2->next;
+    }
+
+    (current_command_2->precode_list).push_back(new_precode_obj("LABEL", label_end, NULL));
+    current_command_2->length++;
 
     return cond_block;
 }
