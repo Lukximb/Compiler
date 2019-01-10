@@ -165,12 +165,20 @@ void gen_label(struct precode_object* line) {
 }
 
 void gen_jzero(struct precode_object* line) {
-    asm_code.push_back("QZ " + line->var_1->id_1 + " " + string(to_string(line->var_2->value)));
+    if (line->var_2->label == 3) {
+        asm_code.push_back("JZERO " + line->var_1->id_1 + " " + string(to_string(lines + line->var_1->value)));
+    } else {
+        asm_code.push_back("QZ " + line->var_1->id_1 + " " + string(to_string(line->var_2->value)));
+    }
     lines++;
 }
 
 void gen_jump(struct precode_object* line) {
-    asm_code.push_back("Q  " + string(to_string(line->var_1->value)));
+    if (line->var_1->label == 3) {
+        asm_code.push_back("JUMP " + string(to_string(lines + line->var_1->value)));
+    } else {
+        asm_code.push_back("Q  " + string(to_string(line->var_1->value)));
+    }
     lines++;
 }
 
