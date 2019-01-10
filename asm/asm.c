@@ -39,6 +39,10 @@ void translate(struct precode_block* block) {
                 gen_mod(block->precode_list[i]);
             } else if (block->precode_list[i]->label.compare("COPY") == 0) {
                 gen_copy(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("INC") == 0) {
+                gen_inc(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("DEC") == 0) {
+                gen_dec(block->precode_list[i]);
             } else {
                 // print_precode_obj(block->precode_list[i]);
             }
@@ -238,6 +242,16 @@ void gen_mod(struct precode_object* line) {
 
 void gen_add(struct precode_object* line) {
     asm_code.push_back("ADD " + line->var_1->id_1 + " " + line->var_2->id_1);
+    lines++;
+}
+
+void gen_inc(struct precode_object* line) {
+    asm_code.push_back("INC " + line->var_1->id_1);
+    lines++;
+}
+
+void gen_dec(struct precode_object* line) {
+    asm_code.push_back("DEC " + line->var_1->id_1);
     lines++;
 }
 

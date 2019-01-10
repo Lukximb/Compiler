@@ -38,6 +38,7 @@ int semantic_analyse(struct ast* root) {
         }
         next_node = next_node->s_1;
     }
+    iter_iterator = memory_counter + 1;
     return 1;
 }
 

@@ -51,6 +51,10 @@ void gen_mull(struct precode_object* line);
 
 void gen_mod(struct precode_object* line);
 
+void gen_inc(struct precode_object* line);
+
+void gen_dec(struct precode_object* line);
+
 void swap_labels();
 
 void print_asm();
