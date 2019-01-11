@@ -207,23 +207,23 @@ void gen_div(struct precode_object* line) {
 }
 
 void gen_mull(struct precode_object* line) {
-    asm_code.push_back("COPY " + line->var_1->id_1 + " " + line->var_2->id_1);
-    lines++;
-    asm_code.push_back("SUB " + line->var_1->id_1 + " " + line->var_1->id_1);
+    asm_code.push_back("SUB D D");
     lines++;
     asm_code.push_back("JODD " + line->var_2->id_1 + " " + string(to_string(lines+2)));
     lines++;
-    asm_code.push_back("ADD " + line->var_1->id_1 + " D");
+    asm_code.push_back("JUMP " + string(to_string(lines+2)));
     lines++;
-    asm_code.push_back("ADD D D");
+    asm_code.push_back("ADD D " + line->var_1->id_1);
+    lines++;
+    asm_code.push_back("ADD " + line->var_1->id_1 + " " + line->var_1->id_1);
     lines++;
     asm_code.push_back("HALF " + line->var_2->id_1);
-    lines++;
-    asm_code.push_back("ADD " + line->var_1->id_1 + " D");
     lines++;
     asm_code.push_back("JZERO " + line->var_2->id_1 + " " + string(to_string(lines+2)));
     lines++;
     asm_code.push_back("JUMP " + string(to_string(lines-6)));
+    lines++;
+    asm_code.push_back("COPY " + line->var_1->id_1 + " D");
     lines++;
 }
 
