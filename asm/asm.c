@@ -192,6 +192,8 @@ void gen_copy(struct precode_object* line) {
 }
 
 void gen_div(struct precode_object* line) {
+    asm_code.push_back("JZERO " + line->var_2->id_1 + " " + string(to_string(lines+24)));
+    lines++;
     asm_code.push_back("SUB D D");
     lines++;
     asm_code.push_back("SUB E E");
@@ -235,6 +237,10 @@ void gen_div(struct precode_object* line) {
     asm_code.push_back("JUMP " + string(to_string(lines-10)));
     lines++;
     asm_code.push_back("COPY " + line->var_1->id_1 + " D");
+    lines++;
+    asm_code.push_back("JUMP " + string(to_string(lines+2)));
+    lines++;
+    asm_code.push_back("COPY " + line->var_1->id_1 + " " + line->var_2->id_1);
     lines++;
 }
 
@@ -260,6 +266,8 @@ void gen_mull(struct precode_object* line) {
 }
 
 void gen_mod(struct precode_object* line) {
+    asm_code.push_back("JZERO " + line->var_2->id_1 + " " + string(to_string(lines+23)));
+    lines++;
     asm_code.push_back("SUB D D");
     lines++;
     asm_code.push_back("SUB E E");
@@ -301,6 +309,10 @@ void gen_mod(struct precode_object* line) {
     asm_code.push_back("INC D");
     lines++;
     asm_code.push_back("JUMP " + string(to_string(lines-10)));
+    lines++;
+    asm_code.push_back("JUMP " + string(to_string(lines+2)));
+    lines++;
+    asm_code.push_back("COPY " + line->var_1->id_1 + " " + line->var_2->id_1);
     lines++;
     // asm_code.push_back("COPY " + line->var_1->id_1 + " D");
     // lines++;
