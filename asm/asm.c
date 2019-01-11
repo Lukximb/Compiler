@@ -260,16 +260,50 @@ void gen_mull(struct precode_object* line) {
 }
 
 void gen_mod(struct precode_object* line) {
-    asm_code.push_back("SUB " + line->var_1->id_1 + " " + line->var_2->id_1);
+    asm_code.push_back("SUB D D");
     lines++;
-    asm_code.push_back("COPY D " + line->var_1->id_1);
+    asm_code.push_back("SUB E E");
     lines++;
-    asm_code.push_back("JZERO "  + line->var_1->id_1 + " " + string(to_string(lines+3)));
+    asm_code.push_back("COPY A " + line->var_2->id_1);
     lines++;
-    asm_code.push_back("JUMP " + string(to_string(lines-3)));
+    asm_code.push_back("SUB " + line->var_2->id_1 + " " + line->var_1->id_1);
     lines++;
-    asm_code.push_back("COPY " + line->var_1->id_1 + " D");
+    asm_code.push_back("JZERO " + line->var_2->id_1 + " " + string(to_string(lines+2)));
     lines++;
+    asm_code.push_back("JUMP " + string(to_string(lines+5)));
+    lines++;
+    asm_code.push_back("INC E");
+    lines++;
+    asm_code.push_back("ADD A A");
+    lines++;
+    asm_code.push_back("COPY " + line->var_2->id_1 + " A");
+    lines++;
+    asm_code.push_back("JUMP " + string(to_string(lines-6)));
+    lines++;
+    asm_code.push_back("JZERO E " + string(to_string(lines+11)));
+    lines++;
+    asm_code.push_back("HALF A");
+    lines++;
+    asm_code.push_back("ADD D D");
+    lines++;
+    asm_code.push_back("DEC E");
+    lines++;
+    asm_code.push_back("COPY " + line->var_2->id_1 + " A");
+    lines++;
+    asm_code.push_back("SUB " + line->var_2->id_1 + " " + line->var_1->id_1);
+    lines++;
+    asm_code.push_back("JZERO " + line->var_2->id_1 + " " + string(to_string(lines+2)));
+    lines++;
+    asm_code.push_back("JUMP " + string(to_string(lines-7)));
+    lines++;
+    asm_code.push_back("SUB " + line->var_1->id_1 + " A");
+    lines++;
+    asm_code.push_back("INC D");
+    lines++;
+    asm_code.push_back("JUMP " + string(to_string(lines-10)));
+    lines++;
+    // asm_code.push_back("COPY " + line->var_1->id_1 + " D");
+    // lines++;
 }
 
 void gen_add(struct precode_object* line) {
