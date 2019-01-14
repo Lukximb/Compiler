@@ -60,7 +60,6 @@ DOWNTO      {return DOWNTO;}
 WRITE       {return WRITE;}
 READ        {return READ;}
 ENDFOR      {return ENDFOR;}
-s
 
 ";"			{return ';';}
 ":"         {return ':';}
