@@ -62,7 +62,7 @@ vector<struct precode_object*> create_condition(struct ast* node, struct variabl
         precode_list.push_back(new_precode_obj("JZERO_2", reg_c, var));
         precode_list.push_back(new_precode_obj("JUMP", comm, NULL));
         precode_list.push_back(new_precode_obj("SUB", reg_b, reg_d));
-        precode_list.push_back(new_precode_obj("JZERO_2", reg_b, label));
+        precode_list.push_back(new_precode_obj("JZERO", reg_b, label));
     }
     
     return precode_list;
@@ -151,32 +151,64 @@ void print_precode_obj(struct precode_object* obj) {
     string labels[] = {"variable", "registry", "arr", "constant", "label", "iterator"};
 
     cout << obj->label << " ";
-    if (obj->var_1 != NULL) {
-        cout << labels[obj->var_1->label] << "[";
-        if (obj->var_1->label == 0 || obj->var_1->label == 1 || obj->var_1->label == 5) {
-            cout << obj->var_1->id_1 << "] ";
-        } else if (obj->var_1->label == 2) {
-            if ((obj->var_1->id_2).compare("") == 0) {
-                cout << obj->var_1->id_1 << "(" << obj->var_1->value << ")] ";
+    
+    if ((obj->label).compare("L_STORE_VAR") == 0) {
+        if (obj->var_1 != NULL) {
+            cout << labels[obj->var_1->label] << "[";
+            if (obj->var_1->label == 0 || obj->var_1->label == 1 || obj->var_1->label == 5) {
+                cout << obj->var_1->id_1 << "] ";
+            } else if (obj->var_1->label == 2) {
+                if ((obj->var_1->id_2).compare("") == 0) {
+                    cout << obj->var_1->id_1 << "(" << obj->var_1->value << ")] ";
+                } else {
+                    cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+                }
             } else {
-                cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+                cout << obj->var_1->value << "] ";
             }
-        } else {
-            cout << obj->var_1->value << "] ";
         }
-    }
-    if (obj->var_2 != NULL) {
-        cout << labels[obj->var_2->label] << "[";
-        if (obj->var_2->label == 0 || obj->var_2->label == 1 || obj->var_1->label == 5) {
-            cout << obj->var_2->id_1 << "] ";
-        } else if (obj->var_2->label == 2) {
-            if ((obj->var_1->id_2).compare("") == 0) {
-                cout << obj->var_1->id_1 << "(" << obj->var_1->value << ")] ";
+        if (obj->var_2 != NULL) {
+            cout << labels[obj->var_2->label] << "[";
+            if (obj->var_2->label == 0 || obj->var_2->label == 1 || obj->var_1->label == 5) {
+                cout << obj->var_2->id_1 << "] ";
+            } else if (obj->var_2->label == 2) {
+                if ((obj->var_2->id_2).compare("") == 0) {
+                    cout << obj->var_2->id_1 << "(" << obj->var_2->value << ")] ";
+                } else {
+                    cout << obj->var_2->id_1 << "(" << obj->var_2->id_2 << ")] ";
+                }
             } else {
-                cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+                cout << obj->var_2->value << "] ";
             }
-        } else {
-            cout << obj->var_2->value << "] ";
+        }
+    } else {
+        if (obj->var_1 != NULL) {
+            cout << labels[obj->var_1->label] << "[";
+            if (obj->var_1->label == 0 || obj->var_1->label == 1 || obj->var_1->label == 5) {
+                cout << obj->var_1->id_1 << "] ";
+            } else if (obj->var_1->label == 2) {
+                if ((obj->var_1->id_2).compare("") == 0) {
+                    cout << obj->var_1->id_1 << "(" << obj->var_1->value << ")] ";
+                } else {
+                    cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+                }
+            } else {
+                cout << obj->var_1->value << "] ";
+            }
+        }
+        if (obj->var_2 != NULL) {
+            cout << labels[obj->var_2->label] << "[";
+            if (obj->var_2->label == 0 || obj->var_2->label == 1 || obj->var_1->label == 5) {
+                cout << obj->var_2->id_1 << "] ";
+            } else if (obj->var_2->label == 2) {
+                if ((obj->var_1->id_2).compare("") == 0) {
+                    cout << obj->var_1->id_1 << "(" << obj->var_1->value << ")] ";
+                } else {
+                    cout << obj->var_1->id_1 << "(" << obj->var_1->id_2 << ")] ";
+                }
+            } else {
+                cout << obj->var_2->value << "] ";
+            }
         }
     }
     cout << endl;
