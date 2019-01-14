@@ -178,10 +178,13 @@ struct precode_block* create_forto(struct ast* node) {
     struct variable* label_for = get_new_label();
     struct variable* label_end = get_new_label();
 
-    struct precode_block* iter_block = get_new_iter(node->s_1->value, node->s_2);
+    string iter_end_name = "end_iter_" + node->s_1->value;
 
-    (iter_block->precode_list).push_back(new_precode_obj("LABEL", label_for, NULL));
-    (iter_block->length)++;
+    struct precode_block* iter_block = get_new_iter(node->s_1->value, node->s_2);
+    struct precode_block* iter_end_block = get_new_iter(iter_end_name, node->s_3);
+
+    (iter_end_block->precode_list).push_back(new_precode_obj("LABEL", label_for, NULL));
+    (iter_end_block->length)++;
 
     // GENERATE CONDITION
     vector<struct precode_object*> cond;
@@ -189,19 +192,26 @@ struct precode_block* create_forto(struct ast* node) {
     struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
     struct variable* reg_c = new_variable(variable_label(registry), "C", "", 0);
     struct variable* iter = new_variable(variable_label(variable), node->s_1->value, "", 0);
-    
-    cond.push_back(new_precode_obj("L_LOAD_VAR", iter, reg_c));
-    cond.push_back(create_load(node->s_3, "B"));
+    struct variable* iter_end = new_variable(variable_label(variable), iter_end_name, "", 0);
+    struct variable* var = new_variable(variable_label(constant), "", "", 2);
+        
+    cond.push_back(new_precode_obj("L_LOAD_VAR", iter, reg_b));
+    // cond.push_back(create_load(node->s_3, "C"));
+    cond.push_back(new_precode_obj("L_LOAD_VAR", iter_end, reg_c));
     cond.push_back(new_precode_obj("SUB", reg_b, reg_c));
-    cond.push_back(new_precode_obj("JZERO", reg_b, label_end));
+    cond.push_back(new_precode_obj("JZERO_2", reg_b, var));
+    cond.push_back(new_precode_obj("JUMP", label_end, NULL));
 
     struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
     // END CONDITION
 
     struct precode_block* commands = create_commands(node->s_4);
 
-    iter_block->next = cond_block;
-    cond_block->previous = iter_block;
+    iter_block->next = iter_end_block;
+    iter_end_block->previous = iter_block;
+
+    iter_end_block->next = cond_block;
+    cond_block->previous = iter_end_block;
 
     cond_block->next = commands;
     commands->previous = cond_block;
@@ -228,10 +238,13 @@ struct precode_block* create_fordownto(struct ast* node) {
     struct variable* label_for = get_new_label();
     struct variable* label_end = get_new_label();
 
-    struct precode_block* iter_block = get_new_iter(node->s_1->value, node->s_2);
+    string iter_end_name = "end_iter_" + node->s_1->value;
 
-    (iter_block->precode_list).push_back(new_precode_obj("LABEL", label_for, NULL));
-    (iter_block->length)++;
+    struct precode_block* iter_block = get_new_iter(node->s_1->value, node->s_2);
+    struct precode_block* iter_end_block = get_new_iter(iter_end_name, node->s_3);
+
+    (iter_end_block->precode_list).push_back(new_precode_obj("LABEL", label_for, NULL));
+    (iter_end_block->length)++;
 
     // GENERATE CONDITION
     vector<struct precode_object*> cond;
@@ -239,19 +252,26 @@ struct precode_block* create_fordownto(struct ast* node) {
     struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
     struct variable* reg_c = new_variable(variable_label(registry), "C", "", 0);
     struct variable* iter = new_variable(variable_label(variable), node->s_1->value, "", 0);
-    
+    struct variable* iter_end = new_variable(variable_label(variable), iter_end_name, "", 0);
+    struct variable* var = new_variable(variable_label(constant), "", "", 2);
+
     cond.push_back(new_precode_obj("L_LOAD_VAR", iter, reg_c));
-    cond.push_back(create_load(node->s_3, "B"));
-    cond.push_back(new_precode_obj("SUB", reg_c, reg_b));
-    cond.push_back(new_precode_obj("JZERO", reg_c, label_end));
+    cond.push_back(new_precode_obj("L_LOAD_VAR", iter_end, reg_b));
+    // cond.push_back(create_load(node->s_3, "B"));
+    cond.push_back(new_precode_obj("SUB", reg_b, reg_c));
+    cond.push_back(new_precode_obj("JZERO_2", reg_b, var));
+    cond.push_back(new_precode_obj("JUMP", label_end, NULL));
 
     struct precode_block* cond_block = new_precode_block(NULL, NULL, cond, cond.size());
     // END CONDITION
 
     struct precode_block* commands = create_commands(node->s_4);
 
-    iter_block->next = cond_block;
-    cond_block->previous = iter_block;
+    iter_block->next = iter_end_block;
+    iter_end_block->previous = iter_block;
+
+    iter_end_block->next = cond_block;
+    cond_block->previous = iter_end_block;
 
     cond_block->next = commands;
     commands->previous = cond_block;
@@ -263,13 +283,14 @@ struct precode_block* create_fordownto(struct ast* node) {
 
     // DECREMENT ITERATOR
     (current_command->precode_list).push_back(new_precode_obj("L_LOAD_VAR", iter, reg_b));
+    (current_command->precode_list).push_back(new_precode_obj("JZERO", reg_b, label_end));
     (current_command->precode_list).push_back(new_precode_obj("DEC", reg_b, NULL));
     (current_command->precode_list).push_back(new_precode_obj("L_STORE_VAR", reg_b, iter));
     // END DECREMENT
 
     (current_command->precode_list).push_back(new_precode_obj("JUMP", label_for, NULL));
     (current_command->precode_list).push_back(new_precode_obj("LABEL", label_end, NULL));
-    (current_command->length) += 5;
+    (current_command->length) += 6;
 
     return iter_block;
 }
