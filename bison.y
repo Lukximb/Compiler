@@ -10,7 +10,7 @@
 	int yylex(void);
 	void yyerror(char *);
 
-	// extern int yylineno;
+	extern int yylineno;
 %}
 
 %union {
@@ -54,7 +54,7 @@ declarations:
         struct ast* id = newast(string("ID"), NULL, NULL, NULL, NULL, $2, 0);
         $$ = newast("DECLARATIONS", $1, id, NULL, NULL, "DECVAR", 0);
     }
-|	declarations ID'('NUM':'NUM')'  {
+|	declarations ID'('NUM':'NUM')'';'  {
         struct ast* id = newast("ID", NULL, NULL, NULL, NULL, $2, 0);
         struct ast* num1 = newast("NUM", NULL, NULL, NULL, NULL, "EMPTY", $4);
         struct ast* num2 = newast("NUM", NULL, NULL, NULL, NULL, "EMPTY", $6);
@@ -158,7 +158,7 @@ value:
 
 identifier:
 	ID  {
-        struct ast* id = newast(string("ID-"), NULL, NULL, NULL, NULL, string($1), 0);
+        struct ast* id = newast(string("ID"), NULL, NULL, NULL, NULL, string($1), 0);
         $$ = newast("IDENTIFIER1", id, NULL, NULL, NULL, "EMPTY", 0);
     }
 |	ID'('ID')'  {
@@ -184,6 +184,6 @@ int main(int argc, char **argv) {
 }
 
 void yyerror(char *s) {
-	fprintf(stderr, "Error:%s.\n", s);
+	fprintf(stderr, "Error in %d: %s.\n", yylineno, s);
 	exit(1);
 }
