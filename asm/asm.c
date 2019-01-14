@@ -88,20 +88,10 @@ void gen_load(struct precode_object* line) {
         asm_code.push_back("LOAD " + line->var_2->id_1);
         lines++;
     } else if (line->var_1->label == 2) {
-        // struct array_object* arr = arrays[line->var_1->id_1];
-        // vector<string> var_ind;
-        // vector<string> arr_ind;
-        // vector<string> start_ind;
         if ((line->var_1->id_2).compare("") == 0) {
             vector<string> var_ind = generate_const(line->var_1->value, "A");
             vector<string> arr_ind = generate_const(arrays[line->var_1->id_1]->memory_index, "D");
             vector<string> start_ind = generate_const(arrays[line->var_1->id_1]->start, "C");
-            // int n = line->var_1->value - arr->start;
-            // // cout << "@@@ " << arr->start << endl;
-            // vector<string> gen_n = generate_const(n, "A");
-            // print_generate_const(gen_n);
-            // asm_code.push_back("LOAD " + line->var_2->id_1);
-            // lines++;
             print_generate_const(var_ind);
             asm_code.push_back("LOAD C");
             lines++;
