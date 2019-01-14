@@ -88,24 +88,50 @@ void gen_load(struct precode_object* line) {
         asm_code.push_back("LOAD " + line->var_2->id_1);
         lines++;
     } else if (line->var_1->label == 2) {
-        struct array_object* arr = arrays[line->var_1->id_1];
+        // struct array_object* arr = arrays[line->var_1->id_1];
+        // vector<string> var_ind;
+        // vector<string> arr_ind;
+        // vector<string> start_ind;
         if ((line->var_1->id_2).compare("") == 0) {
-            int n = line->var_1->value - arr->start;
-            vector<string> gen_n = generate_const(n, "A");
-            print_generate_const(gen_n);
+            vector<string> var_ind = generate_const(line->var_1->value, "A");
+            vector<string> arr_ind = generate_const(arrays[line->var_1->id_1]->memory_index, "D");
+            vector<string> start_ind = generate_const(arrays[line->var_1->id_1]->start, "C");
+            // int n = line->var_1->value - arr->start;
+            // // cout << "@@@ " << arr->start << endl;
+            // vector<string> gen_n = generate_const(n, "A");
+            // print_generate_const(gen_n);
+            // asm_code.push_back("LOAD " + line->var_2->id_1);
+            // lines++;
+            print_generate_const(var_ind);
+            asm_code.push_back("LOAD C");
+            lines++;
+            print_generate_const(arr_ind);
+            asm_code.push_back("ADD D C");
+            lines++;
+            print_generate_const(start_ind);
+            asm_code.push_back("SUB D C");
+            lines++;
+            asm_code.push_back("COPY A D");
+            lines++;
             asm_code.push_back("LOAD " + line->var_2->id_1);
             lines++;
         } else {
-            int a_ind = variables[line->var_1->id_2];
-            vector<string> gen_n = generate_const(a_ind, "A");
-            vector<string> a_from = generate_const(arr->start, "B");
-            print_generate_const(gen_n);
-            asm_code.push_back("LOAD " + line->var_2->id_1);
+            vector<string> var_ind = generate_const(variables[line->var_1->id_2], "A");
+            vector<string> arr_ind = generate_const(arrays[line->var_1->id_1]->memory_index, "D");
+            vector<string> start_ind = generate_const(arrays[line->var_1->id_1]->start, "C");
+            print_generate_const(var_ind);
+            asm_code.push_back("LOAD C");
             lines++;
-            print_generate_const(a_from);
-            asm_code.push_back("SUB A " + line->var_2->id_1);
+            print_generate_const(arr_ind);
+            asm_code.push_back("ADD D C");
+            lines++;
+            print_generate_const(start_ind);
+            asm_code.push_back("SUB D C");
+            lines++;
+            asm_code.push_back("COPY A D");
+            lines++;
             asm_code.push_back("LOAD " + line->var_2->id_1);
-            lines += 2;
+            lines++;        
         }
     } else if (line->var_1->label == 3) {
         vector<string> n = generate_const(line->var_1->value, line->var_2->id_1);
@@ -122,32 +148,46 @@ void gen_store(struct precode_object* line) {
         asm_code.push_back("STORE " + line->var_1->id_1);
         lines++;
     } else if (line->var_2->label == 2) {
-        struct array_object* arr = arrays[line->var_2->id_1];
         if ((line->var_2->id_2).compare("") == 0) {
-            int n = line->var_2->value - arr->start;
-            vector<string> gen_n = generate_const(n, "A");
- 
-            print_generate_const(gen_n);
+            vector<string> var_ind = generate_const(line->var_2->value, "A");
+            vector<string> arr_ind = generate_const(arrays[line->var_2->id_1]->memory_index, "D");
+            vector<string> start_ind = generate_const(arrays[line->var_2->id_1]->start, "C");
+
+            print_generate_const(var_ind);
+            asm_code.push_back("LOAD C");
+            lines++;
+            print_generate_const(arr_ind);
+            asm_code.push_back("ADD D C");
+            lines++;
+            print_generate_const(start_ind);
+            asm_code.push_back("SUB D C");
+            lines++;
+            asm_code.push_back("COPY A D");
+            lines++;
             asm_code.push_back("STORE " + line->var_1->id_1);
             lines++;
         } else {
-            int a_ind = variables[line->var_2->id_2];
-            vector<string> gen_n = generate_const(a_ind, "A");
-            vector<string> a_from = generate_const(arr->start, "B");
-
-            print_generate_const(gen_n);
+            vector<string> var_ind = generate_const(variables[line->var_2->id_2], "A");
+            vector<string> arr_ind = generate_const(arrays[line->var_2->id_1]->memory_index, "D");
+            vector<string> start_ind = generate_const(arrays[line->var_2->id_1]->start, "C");
+            print_generate_const(var_ind);
+            asm_code.push_back("LOAD C");
+            lines++;
+            print_generate_const(arr_ind);
+            asm_code.push_back("ADD D C");
+            lines++;
+            print_generate_const(start_ind);
+            asm_code.push_back("SUB D C");
+            lines++;
+            asm_code.push_back("COPY A D");
+            lines++;
             asm_code.push_back("STORE " + line->var_1->id_1);
             lines++;
- 
-            print_generate_const(a_from);
-            asm_code.push_back("SUB A " + line->var_1->id_1);
-            asm_code.push_back("STORE " + line->var_1->id_1);
-            lines += 2;
         }
     } 
 }
 
-void print_generate_const(vector<string> vec) {
+void print_generate_const(vector<string>& vec) {
     for (int i = vec.size()-1; i >= 0; i--) {
         asm_code.push_back(vec[i]);
         lines++;

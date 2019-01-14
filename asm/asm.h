@@ -31,7 +31,9 @@ void gen_load(struct precode_object* line);
 
 void gen_store(struct precode_object* line);
 
-void print_generate_const(vector<string> vec);
+void print_generate_const(vector<string>& vec);
+
+void test(vector<string>& vec);
 
 void gen_get(struct precode_object* line);
 
