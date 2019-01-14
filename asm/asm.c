@@ -15,6 +15,8 @@ void translate(struct precode_block* block) {
                 gen_load(block->precode_list[i]);
             } else if (block->precode_list[i]->label.compare("L_STORE_VAR") == 0) {
                 gen_store(block->precode_list[i]);
+            } else if (block->precode_list[i]->label.compare("L_STORE_ITER") == 0) {
+                gen_store_iter(block->precode_list[i]);
             } else if (block->precode_list[i]->label.compare("JZERO_2") == 0) {
                 gen_jzero_2(block->precode_list[i]);
             } else if (block->precode_list[i]->label.compare("ADD") == 0) {
@@ -182,6 +184,11 @@ void print_generate_const(vector<string>& vec) {
         asm_code.push_back(vec[i]);
         lines++;
     }
+}
+
+void gen_store_iter(struct precode_object* line) {
+    asm_code.push_back("STORE " + line->var_1->id_1);
+    lines++;
 }
 
 void gen_get(struct precode_object* line) {

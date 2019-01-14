@@ -224,7 +224,7 @@ struct precode_block* create_forto(struct ast* node) {
     // DECREMENT ITERATOR
     (current_command->precode_list).push_back(new_precode_obj("L_LOAD_VAR", iter, reg_b));
     (current_command->precode_list).push_back(new_precode_obj("INC", reg_b, NULL));
-    (current_command->precode_list).push_back(new_precode_obj("L_STORE_VAR", reg_b, iter));
+    (current_command->precode_list).push_back(new_precode_obj("L_STORE_ITER", reg_b, NULL));
     // END DECREMENT
 
     (current_command->precode_list).push_back(new_precode_obj("JUMP", label_for, NULL));
@@ -285,7 +285,7 @@ struct precode_block* create_fordownto(struct ast* node) {
     (current_command->precode_list).push_back(new_precode_obj("L_LOAD_VAR", iter, reg_b));
     (current_command->precode_list).push_back(new_precode_obj("JZERO", reg_b, label_end));
     (current_command->precode_list).push_back(new_precode_obj("DEC", reg_b, NULL));
-    (current_command->precode_list).push_back(new_precode_obj("L_STORE_VAR", reg_b, iter));
+    (current_command->precode_list).push_back(new_precode_obj("L_STORE_ITER", reg_b, NULL));
     // END DECREMENT
 
     (current_command->precode_list).push_back(new_precode_obj("JUMP", label_for, NULL));
