@@ -91,12 +91,12 @@ void gen_load(struct precode_object* line) {
         lines++;
     } else if (line->var_1->label == 2) {
         if ((line->var_1->id_2).compare("") == 0) {
-            vector<string> var_ind = generate_const(line->var_1->value, "A");
+            vector<string> var_ind = generate_const(line->var_1->value, "C");
             vector<string> arr_ind = generate_const(arrays[line->var_1->id_1]->memory_index, "D");
             vector<string> start_ind = generate_const(arrays[line->var_1->id_1]->start, "C");
             print_generate_const(var_ind);
-            asm_code.push_back("LOAD C");
-            lines++;
+            // asm_code.push_back("LOAD C");
+            // lines++;
             print_generate_const(arr_ind);
             asm_code.push_back("ADD D C");
             lines++;
@@ -141,13 +141,13 @@ void gen_store(struct precode_object* line) {
         lines++;
     } else if (line->var_2->label == 2) {
         if ((line->var_2->id_2).compare("") == 0) {
-            vector<string> var_ind = generate_const(line->var_2->value, "A");
+            vector<string> var_ind = generate_const(line->var_2->value, "C");
             vector<string> arr_ind = generate_const(arrays[line->var_2->id_1]->memory_index, "D");
             vector<string> start_ind = generate_const(arrays[line->var_2->id_1]->start, "C");
 
             print_generate_const(var_ind);
-            asm_code.push_back("LOAD C");
-            lines++;
+            // asm_code.push_back("LOAD C");
+            // lines++;
             print_generate_const(arr_ind);
             asm_code.push_back("ADD D C");
             lines++;
