@@ -4,19 +4,19 @@ run:
 	# cat examples/program1.imp | ./run_compiler > examples/res.mr
 	# ./machine/maszyna-rejestrowa examples/res.mr
 
-	cat test/$(FILE).imp | ./run_compiler > test/$(FILE).res
-	./machine/maszyna-rejestrowa test/$(FILE).res
+	cat test/$(FILE).imp | ./run_compiler > test/results/$(FILE).mr
+	./machine/maszyna-rejestrowa test/results/$(FILE).mr
 
 compile: flex.l bison.y
 	bison -d bison.y
 	flex -o flex.lex.c flex.l
-	clang++ -std=c++11 -c structures/struct.c
-	clang++ -std=c++11 -c precodes/auxiliary_functions.c
-	clang++ -std=c++11 -c precodes/function_handlers.c
-	clang++ -std=c++11 -c program/program_functions.c
-	clang++ -std=c++11 -c asm/asm.c
+	clang++ -std=c++17 -c structures/struct.c
+	clang++ -std=c++17 -c precodes/auxiliary_functions.c
+	clang++ -std=c++17 -c precodes/function_handlers.c
+	clang++ -std=c++17 -c program/program_functions.c
+	clang++ -std=c++17 -c asm/asm.c
 	clang++ -Wno-everything \
-	-std=c++11 \
+	-std=c++17 \
 	-o run_compiler \
 	struct.o \
 	auxiliary_functions.o \
