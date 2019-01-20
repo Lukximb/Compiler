@@ -144,6 +144,25 @@ struct precode_block* get_new_iter(string name, struct ast* node) {
     return new_precode_block(NULL, NULL, precode_list, precode_list.size());
 }
 
+struct precode_block* get_new_iter(string name, struct ast* node_from, struct ast* node_to) {
+    vector<struct precode_object*> precode_list;
+    variables[name] = iter_iterator;
+
+    precode_list.push_back(create_load(node_from, "B"));
+    precode_list.push_back(create_load(node_to, "C"));
+
+    struct variable* v = new_variable(variable_label(variable), name, "", iter_iterator);
+    struct variable* reg_b = new_variable(variable_label(registry), "B", "", 0);
+    struct variable* reg_c = new_variable(variable_label(registry), "C", "", 0);
+    
+    precode_list.push_back(new_precode_obj("SUB", reg_b, reg_c));
+    precode_list.push_back(new_precode_obj("INC", reg_b, NULL));
+    precode_list.push_back(new_precode_obj("L_STORE_VAR", reg_b, v));
+
+    iter_iterator++;
+    return new_precode_block(NULL, NULL, precode_list, precode_list.size());
+}
+
 
 // ================== OTHERS =============
 

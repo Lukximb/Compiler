@@ -1,8 +1,11 @@
 all: compile run clean
 
 run:
-	cat examples/program1.imp | ./run_compiler > examples/res.mr
-	./machine/maszyna-rejestrowa examples/res.mr
+	# cat examples/program1.imp | ./run_compiler > examples/res.mr
+	# ./machine/maszyna-rejestrowa examples/res.mr
+
+	cat test/$(FILE).imp | ./run_compiler > test/$(FILE).res
+	./machine/maszyna-rejestrowa test/$(FILE).res
 
 compile: flex.l bison.y
 	bison -d bison.y
@@ -27,7 +30,7 @@ clean:
 	rm flex.lex.c
 	rm bison.tab.c
 	rm bison.tab.h
-	rm run_compiler
+	# rm run_compiler
 	rm struct.o
 	rm auxiliary_functions.o
 	rm function_handlers.o

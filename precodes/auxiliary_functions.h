@@ -35,6 +35,8 @@ struct variable* get_new_label();
 
 struct precode_block* get_new_iter(string name, struct ast* node);
 
+struct precode_block* get_new_iter(string name, struct ast* node_from, struct ast* node_to);
+
 void print_precode_obj(struct precode_object* obj);
 
 #endif
